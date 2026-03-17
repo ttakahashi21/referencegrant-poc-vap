@@ -1,0 +1,20 @@
+apiVersion: policy.example.com/v1
+kind: ReferenceGrantPolicy
+metadata:
+  name: allow-pvc-list
+  namespace: namespace1 # Placed in the granting (target) namespace
+  labels:
+    policy-type: cross-ns-storage
+spec:
+  from:
+  - group: ""
+    kind: PersistentVolumeClaim
+    namespace: namespace2
+  to:
+  - group: "snapshot.storage.k8s.io"
+    kind: VolumeSnapshot
+    names:
+    # List the resources you want to allow here
+    - "source-snapshot-a"
+    - "source-snapshot-b"
+    - "common-base-snapshot"

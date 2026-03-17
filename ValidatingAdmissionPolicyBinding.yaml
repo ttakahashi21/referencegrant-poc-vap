@@ -1,0 +1,19 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: namespace2-reference-grant-binding
+spec:
+  policyName: validate-reference-grant
+  # 適用対象を定義
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        # 名前空間の名前で直接フィルタリング
+        kubernetes.io/metadata.name: namespace2
+  validationActions: [ Deny ]
+  paramRef:
+    selector:
+      matchLabels:
+        policy-type: cross-ns-storage
+    namespace: namespace1 # 指定したnamespaceからリソースを取得するように設定
+    parameterNotFoundAction: Allow # 見つからない場合は拒否するように変更（安全のため）実際にパラメータが無くても動作するようにする必要性有。

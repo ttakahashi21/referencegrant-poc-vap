@@ -1,0 +1,17 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: namespace2-reference-grant-binding
+spec:
+  policyName: validate-reference-grant
+  # Defines the target resources for application
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        # Filters directly by the namespace name
+        kubernetes.io/metadata.name: namespace2
+  validationActions: [ Deny ]
+  paramRef:
+    name: allow-pvc-list
+    namespace: namespace1 # Configured to retrieve resources from the specified namespace
+    parameterNotFoundAction: Allow

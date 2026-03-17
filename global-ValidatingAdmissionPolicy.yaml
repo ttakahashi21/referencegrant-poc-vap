@@ -1,0 +1,36 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: validate-reference-grant
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: policy.example.com/v1
+    kind: ReferenceGrantPolicy
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [ "" ]
+      apiVersions: [ "v1" ]
+      operations: [ "CREATE" ] # Ensure UPDATE is not set.
+      resources: [ "persistentvolumeclaims" ]
+  matchConditions:
+  - name: "is-not-self-reference"
+    # Simplified the original ternary operator logic.
+    # Checks "Is there a cross-namespace reference?" 
+    # If true, it proceeds to the subsequent validation.
+    expression: "has(object.spec.dataSourceRef) && has(object.spec.dataSourceRef.namespace)"
+  validations:
+  - expression: |
+      has(params.spec) && 
+      params.spec.from.exists(f, 
+        (f.namespace == object.metadata.namespace || f.namespace == "*") &&
+        (f.group == (request.kind.group == "" ? "" : request.kind.group)) &&
+        (f.kind == request.kind.kind)
+      ) &&
+      params.spec.to.exists(t,
+        (t.group == (object.spec.dataSourceRef.apiGroup == null ? "" : object.spec.dataSourceRef.apiGroup)) &&
+        (t.kind == object.spec.dataSourceRef.kind) &&
+        (size(t.names) == 0 || t.names.exists(name, name == object.spec.dataSourceRef.name))
+      )
+    messageExpression: |
+      "Denied: Cross-namespace reference from " + object.metadata.namespace + "/" + object.kind + " to " + object.spec.dataSourceRef.namespace + "/" + object.spec.dataSourceRef.kind + "/" + object.spec.dataSourceRef.name + " is not authorized by ReferenceGrantPolicy '" + params.metadata.name + "'."
